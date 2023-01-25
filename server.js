@@ -41,7 +41,7 @@ app.get("/", (req,res)=> {
 
 app.post("/signin", (req,res)=>{
 	if (req.body.email === database.users[1].email && req.body.password === database.users[1].password){
-			res.json("success")
+			res.json(database.users[1]);
 	} else {
 		res.json("Something went wrong")
 	}

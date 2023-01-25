@@ -1,7 +1,8 @@
 const express = require("express");
+let cors = require('cors');
 
 const app = express();
-app.use(express.json());
+
 
 
 const database = {
@@ -27,6 +28,8 @@ const database = {
 		}
 	]
 }
+app.use(cors());
+app.use(express.json());
 
 
 
@@ -40,7 +43,7 @@ app.post("/signin", (req,res)=>{
 	if (req.body.email === database.users[1].email && req.body.password === database.users[1].password){
 			res.json("success")
 	} else {
-		res.send("Something went wrong")
+		res.json("Something went wrong")
 	}
 
 
@@ -61,15 +64,51 @@ app.post("/register", (req,res)=>{
 
 	)
 
-	res.json(database.users[database.users.length-1])
+	res.json(database.users[database.users.length-1]);
 
 
 
 })
 
+app.post("/profile/:id", (req,res) => {
+	const {id} = req.params;
+	let exists = false;
+	database.users.forEach((user)=>{
+		if (user.id === id) {
+			exists = true
+			return res.json(user)
+		}		
+	})
 
-app.listen(3000, ()=>{
-	console.log("App is running on port 3000");
+	if (!exists){
+		res.status(404).json("Not found")
+	}
+
+	//res.json(id)
+
+})
+
+
+app.put("/image", (req,res)=>{
+	const {id} = req.body;
+	let exists = false;
+	database.users.forEach((user)=>{
+		if (user.id === id) {
+			exists = true
+			user.entries++
+			return res.json(user)
+		}		
+	})
+
+	if (!exists){
+		res.status(404).json("Not found")
+	}
+	
+
+})
+
+app.listen(3001, ()=>{
+	console.log("App is running on port 3001");
 });
 
 

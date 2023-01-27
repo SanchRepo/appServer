@@ -2,8 +2,20 @@ const express = require("express");
 let cors = require('cors');
 
 const app = express();
+const knex = require('knex')
 
+const postgres = knex({
+  client: 'pg',
+  connection: {
+    host : '127.0.0.1',
+    port : 5432,
+    user : 'postgres',
+    password : 'SLKjd9s!@',
+    database : 'intelliimage'
+  }
+});
 
+console.log(postgres.select().table('users'));
 
 const database = {
 	users: [

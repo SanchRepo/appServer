@@ -4,7 +4,7 @@ let cors = require('cors');
 const app = express();
 const knex = require('knex')
 
-const postgres = knex({
+const db = knex({
   client: 'pg',
   connection: {
     host : '127.0.0.1',
@@ -15,7 +15,7 @@ const postgres = knex({
   }
 });
 
-console.log(postgres.select().table('users'));
+db.select().table('users').then(data => console.log(data))
 
 const database = {
 	users: [
@@ -64,57 +64,56 @@ app.post("/signin", (req,res)=>{
 app.post("/register", (req,res)=>{
 	const {username,password,email} = req.body
 
-	database.users.push(
+	db("users")
+	.returning('*')
+	.insert(
 			{	
-				id:"3",
 				username: username,
-				password: password,
 				email: email,
-				entries: 0,
 				joined: new Date()
 			}
 
-	)
-
-	res.json(database.users[database.users.length-1]);
-
+	).then(user => {
+		res.json(user[0]);
+	}).catch(err => {
+		res.status(400).json("Unable to join");
+	});
 
 
 })
 
 app.post("/profile/:id", (req,res) => {
 	const {id} = req.params;
-	let exists = false;
-	database.users.forEach((user)=>{
-		if (user.id === id) {
-			exists = true
-			return res.json(user)
-		}		
+
+	db("users")
+	.where('id', id)
+	.then(user => {
+		if (user.length) {
+			res.json(user[0]);
+		} else {
+			res.json("User does not exist")
+		}
+
 	})
-
-	if (!exists){
-		res.status(404).json("Not found")
-	}
-
-	//res.json(id)
+	.catch(err => {
+		res.status(400).json("Error in database")
+	});
 
 })
 
 
 app.put("/image", (req,res)=>{
 	const {id} = req.body;
-	let exists = false;
-	database.users.forEach((user)=>{
-		if (user.id === id) {
-			exists = true
-			user.entries++
-			return res.json(user)
-		}		
+	db("users")
+	.where('id', id)
+	.increment('entries', 1)
+	.returning('entries')
+	.then(entries => {
+		res.json(entries[0].entries)
 	})
-
-	if (!exists){
-		res.status(404).json("Not found")
-	}
+	.catch(err => {
+		res.status(400).json("Error updating entries")
+	})
 	
 
 })

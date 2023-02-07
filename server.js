@@ -1,5 +1,6 @@
 const express = require("express");
 let cors = require('cors');
+const bcrypt = require("bcrypt-node")
 
 const app = express();
 const knex = require('knex')
@@ -15,31 +16,8 @@ const db = knex({
   }
 });
 
-db.select().table('users').then(data => console.log(data))
 
-const database = {
-	users: [
 
-		{	
-			id:"1",
-			username: "aSeeker",
-			password: "yaboi",
-			email: "sanch@gmail.com",
-			entries: 0,
-			joined: new Date()
-
-		},
-		{	
-			id:"2",
-			username: "donutman",
-			password: "ilovedonuts",
-			email: "donuts@gmail.com",
-			entries: 0,
-			joined: new Date()
-
-		}
-	]
-}
 app.use(cors());
 app.use(express.json());
 
@@ -47,73 +25,135 @@ app.use(express.json());
 
 
 app.get("/", (req,res)=> {
-	res.json(database.users);
+	db.select().table('users').then(data => res.json(data));
 
 })
 
-app.post("/signin", (req,res)=>{
-	if (req.body.email === database.users[1].email && req.body.password === database.users[1].password){
-			res.json(database.users[1]);
-	} else {
-		res.json("Something went wrong")
-	}
+app.post("/signin", async (req,res)=>{
+	const {password,email} = req.body
+	// if (email === database.users[1].email && password === database.users[1].password){
+	// 		res.json(database.users[1]);
+	// } else {
+	// 	res.json("Something went wrong")
 
+	// }
+	try {
+		//
+		const hash = await db("login").where("email",email);
+		//res.json()
+		if (bcrypt.compareSync(password, hash[0].hash)){
+			const user = await db("users").where("email",email);
+			res.json(user[0]);
+		}
+		
+		else {
+			res.status(400).json("Incorrect credentials or user does not exist");
+		}
+	} catch(err) {
+		res.status(400).json("Error confirming credentials");
+		console.log(err);		
+	}
 
 });
 
-app.post("/register", (req,res)=>{
+app.post("/register", async (req,res)=>{
 	const {username,password,email} = req.body
 
-	db("users")
-	.returning('*')
-	.insert(
-			{	
-				username: username,
-				email: email,
-				joined: new Date()
-			}
+	// try {
+	// 	const user = await db("users")
+	// 	.returning('*')
+	// 	.insert(
+	// 			{	
+	// 				username: username,
+	// 				email: email,
+	// 				joined: new Date()
+	// 			}
 
-	).then(user => {
-		res.json(user[0]);
-	}).catch(err => {
-		res.status(400).json("Unable to join");
-	});
+	// 	)
+	// 	res.json(user[0]);
+	// }
+	// catch(err) {
+	// 	res.status(400).json("Unable to join");
+	// };
+	try {
+		await db.transaction(async trx => {
+			console.log(password);
 
+			const hash = bcrypt.hashSync(password)
 
+			const loginEmail = await trx("login")
+			.insert(
+				{
+					hash: hash,
+					email: email
+
+				}
+			)
+			.returning('email')
+
+			const user = await trx("users")
+			.returning('*')
+			.insert(
+				{	
+					username: username,
+					email: loginEmail[0].email,
+					joined: new Date()
+				}
+			)
+			res.json(user[0]);
+
+		});
+	} catch (err) {
+		res.status(400).json("Error storing information");
+		console.log(err);
+	}
 })
 
-app.post("/profile/:id", (req,res) => {
+app.post("/profile/:id", async (req,res) => {
 	const {id} = req.params;
 
-	db("users")
-	.where('id', id)
-	.then(user => {
+	// db("users")
+	// .where('id', id)
+	// .then(user => {
+	// 	if (user.length) {
+	// 		res.json(user[0]);
+	// 	} else {
+	// 		res.json("User does not exist")
+	// 	}
+
+	// })
+	// .catch(err => {
+	// 	res.status(400).json("Error in database")
+	// });
+	try {
+		const user = await db("users").where('id', id);
 		if (user.length) {
 			res.json(user[0]);
 		} else {
-			res.json("User does not exist")
+			res.json("User does not exist");
 		}
-
-	})
-	.catch(err => {
-		res.status(400).json("Error in database")
-	});
+	} catch(err){
+		res.status(400).json("Error retrieving user");
+		console.log(err);
+	}
 
 })
 
 
-app.put("/image", (req,res)=>{
+app.put("/image", async (req,res)=>{
 	const {id} = req.body;
-	db("users")
-	.where('id', id)
-	.increment('entries', 1)
-	.returning('entries')
-	.then(entries => {
+	try {
+		const entries = await db("users")
+		.where('id', id)
+		.increment('entries', 1)
+		.returning('entries')
+		
 		res.json(entries[0].entries)
-	})
-	.catch(err => {
+	}
+	catch(err) {
 		res.status(400).json("Error updating entries")
-	})
+		console.log(err);
+	}
 	
 
 })

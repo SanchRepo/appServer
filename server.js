@@ -39,6 +39,8 @@ app.post("/register", (req, res) => {register.handleRegister(req, res, db, bcryp
 
 app.post("/profile/:id", (req,res) => {profile.handleProfile(req, res, db)});
 
+app.post("/face", (req,res) => {image.handleFacedetection(req,res)});
+
 
 app.put("/image", (req,res) => {image.handleImage(req, res, db)});
 

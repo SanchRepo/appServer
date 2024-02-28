@@ -9,16 +9,31 @@ const signin = require('./controllers/signin')
 const profile = require('./controllers/profile')
 const image = require('./controllers/image')
 
+
+// //local
+// const db = knex({
+//   client: 'pg',
+//   connection: {
+//     host : '127.0.0.1',
+//     port : 5432,
+//     user : 'postgres',
+//     password : 'SLKjd9s!@',
+//     database : 'intelliimage'
+//   }
+// });
+
+//render
 const db = knex({
   client: 'pg',
   connection: {
-    host : '127.0.0.1',
+    host : 'dpg-cn6n9k8l5elc738i7mb0-a',
     port : 5432,
-    user : 'postgres',
-    password : 'SLKjd9s!@',
-    database : 'intelliimage'
+    user : 'smartbraindb_lu5v_user',
+    password : 'TrhHTMN55dVrJKtt86nJ3CWnBBVAMTD8',
+    database : 'smartbraindb_lu5v'
   }
 });
+
 
 
 
@@ -46,8 +61,8 @@ app.post("/grpc", (req,res) => {image.handleGRPCClarifai(req,res)});
 
 app.put("/image", (req,res) => {image.handleImage(req, res, db)});
 
-app.listen(3001, ()=>{
-	console.log("App is running on port 3001");
+app.listen(process.env.PORT ||3001, ()=>{
+	console.log(`App is running on port ${process.env.PORT}`);
 });
 
 
